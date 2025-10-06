@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CompareMyReturns</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=PT+Serif:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <header class="site-header">
+        <div class="header-inner container">
+            <a class="brand" href="#">
+                <img src="images/logo.svg" alt="CompareMyReturns logo" width="44" height="44">
+                <span id="site-title" class="brand-name">CompareMyReturns</span>
+            </a>
+
+            <button id="nav-button" class="hamburger" aria-label="Toggle navigation"></button>
+
+            <nav id="nav-bar" class="navigation" aria-label="Primary">
+                <ul>
+                    <li class="current"><a href="#">Home</a></li>
+                    <li><a href="#">About</a></li>
+                    <li><a href="#">Help</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="container hero-content">
+            <h1 class="hero-title">See how your money could have grown</h1>
+            <p class="hero-sub">Compare your returns instantly using real-time prices and currency conversions.</p>
+        </div>
+    </section>
+
+    <main id="main" class="container">
+        <!-- APP CARD -->
+        <section class="app-card" id="app">
+            <form id="compare-form" class="form-grid" autocomplete="off">
+                <!-- Asset -->
+                <label for="asset">Select Asset</label>
+                <select id="asset">
+                    <!-- <option value="btc">Bitcoin</option>
+                    <option value="eth">Ethereum</option>
+                    <option value="ada">Cardano</option>
+                    <option value="sol">Solana</option> -->
+                </select>
+
+                <!-- Time frame -->
+                <fieldset class="timeframe">
+                    <legend>Select Time frame</legend>
+                    <label class="radio">
+                        <input type="radio" name="timeframe" value="1m" checked>
+                        <span>1 Month</span>
+                    </label>
+                    <label class="radio">
+                        <input type="radio" name="timeframe" value="1y">
+                        <span>1 Year</span>
+                    </label>
+                </fieldset>
+
+                <!-- Currency -->
+                <label for="currency">Select Currency</label>
+                <select id="currency">
+                    <option value="usd">USD</option>
+                    <option value="eur">EUR</option>
+                    <option value="ngn">NGN</option>
+                </select>
+
+                <!-- CTA -->
+                <button type="submit" class="btn-primary">COMPARE MY RETURNS</button>
+            </form>
+
+            <!-- RESULTS -->
+            <div id="results" class="results">
+                <article class="result-card">
+                    <h3>LUMP SUM</h3>
+                    <dl>
+                        <div>
+                            <dt>Contributed:</dt>
+                            <dd>$100</dd>
+                        </div>
+                        <div>
+                            <dt>Units:</dt>
+                            <dd>0.005 BTC</dd>
+                        </div>
+                        <div>
+                            <dt>Final Value:</dt>
+                            <dd>$120.00</dd>
+                        </div>
+                        <div>
+                            <dt>Gain/Loss:</dt>
+                            <dd class="gain">+$20.00 (20%)</dd>
+                        </div>
+                    </dl>
+                </article>
+
+                <article class="result-card">
+                    <h3>DCA (Dollar-Cost Averaging)</h3>
+                    <dl>
+                        <div>
+                            <dt>Contributed:</dt>
+                            <dd>$100</dd>
+                        </div>
+                        <div>
+                            <dt>Units:</dt>
+                            <dd>0.006 BTC</dd>
+                        </div>
+                        <div>
+                            <dt>Final Value:</dt>
+                            <dd>$130.00</dd>
+                        </div>
+                        <div>
+                            <dt>Gain/Loss:</dt>
+                            <dd class="gain">+$30.00 (30%)</dd>
+                        </div>
+                    </dl>
+                </article>
+            </div>
+
+            <p class="stamp">Returns — Last updated Oct 4, 2025, 13:47 UTC</p>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <p>&copy; <span id="currentyear"></span> <span id="site-owner">CompareMyReturns</span></p>
+            <p id="lastModified"></p>
+        </div>
+    </footer>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>

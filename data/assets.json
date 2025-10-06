@@ -1,0 +1,25 @@
+{
+    "version": 1,
+    "assets": [
+        {
+            "code": "btc",
+            "id": "bitcoin",
+            "name": "Bitcoin"
+        },
+        {
+            "code": "eth",
+            "id": "ethereum",
+            "name": "Ethereum"
+        },
+        {
+            "code": "ada",
+            "id": "cardano",
+            "name": "Cardano"
+        },
+        {
+            "code": "sol",
+            "id": "solana",
+            "name": "Solana"
+        }
+    ]
+}
