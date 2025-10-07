@@ -163,7 +163,7 @@ label {
     font-weight: 600
 }
 
-select {
+select, #amount {
     width: 100%;
     appearance: none;
     padding: .9rem 1rem;
@@ -172,6 +172,7 @@ select {
     background: #e5e5e5;
     font-size: 1rem;
 }
+
 
 /* Timeframe radios */
 .timeframe {

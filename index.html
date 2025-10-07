@@ -32,8 +32,17 @@
     <main id="main" class="container">
         <section class="app-card" id="app">
             <form id="compare-form" class="form-grid" autocomplete="off">
+                <label for="currency">Select Currency</label>
+                <select id="currency"></select>
+
                 <label for="asset">Select Asset</label>
                 <select id="asset"></select>
+
+                <label for="amount">
+                    Amount (<span id="amount-unit">USD</span>)
+                </label>
+                <input id="amount" type="number" min="1" step="1" inputmode="decimal" placeholder="1">
+
 
                 <fieldset class="timeframe">
                     <legend>Select Time Period</legend>
@@ -43,17 +52,11 @@
                     <label class="radio"><input type="radio" name="period" value="1y"><span>1 Year</span></label>
                 </fieldset>
 
-                <label for="currency">Select Currency</label>
-                <select id="currency"></select>
-
-                <label for="amount">Amount (USD)</label>
-                <input id="amount" type="number" min="1" step="1" inputmode="decimal" placeholder="100" />
-
                 <button type="submit" class="btn-primary">COMPARE MY RETURNS</button>
             </form>
 
             <div id="results" class="results"></div>
-            <p class="stamp">Returns — Last updated Oct 4, 2025, 13:47 UTC</p>
+            <p class="stamp"></p>
         </section>
     </main>
 

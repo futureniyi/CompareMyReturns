@@ -5,7 +5,14 @@
 // ---------- Imports ----------
 import { populateAssetOptions } from '../src/ui/populateAssets.js';
 import { fetchCoinGeckoDailyPrices, PERIOD_OPTIONS } from '../src/services/ExternalServices.js';
-import { getUsdRates, ensureCurrencyOptions, saveCurrency } from '../src/services/FxService.js';
+import {
+    getUsdRates,
+    ensureCurrencyOptions,
+    saveCurrency,
+    toUSD,
+    fromUSD,
+    toDisplay, // used by resultsView
+} from '../src/services/FxService.js';
 import { renderResultsCards } from '../src/ui/resultsView.js';
 import { loadPartials } from './partials.js';
 import { wireNav, initBranding } from '../src/utils/domUtils.js';
@@ -15,7 +22,8 @@ import { updateStampFromCaches } from '../src/utils/cacheUtils.js';
 const LS_ASSET = 'cmr_asset';
 const LS_PERIOD = 'cmr_period';
 const LS_CURRENCY = 'cmr_currency';
-const LS_AMOUNT = 'cmr_amount';
+const LS_AMOUNT_LOCAL = 'cmr_amount_local'; // new: amount typed by user in selected currency
+const LS_AMOUNT_LEGACY = 'cmr_amount';       // legacy: USD amount (read-only migration)
 
 // ---------- Cache keys / TTLs ----------
 const PRICE_CACHE_KEY = 'cmr_price_cache';
@@ -28,6 +36,7 @@ const $ = (sel) => document.querySelector(sel);
 const assetSelect = $('#asset');
 const currencyEl = $('#currency');
 const amountEl = $('#amount');
+const amountUnitEl = $('#amount-unit');
 const periodRadios = document.querySelectorAll('input[name="period"]');
 const stampEl = $('.stamp');
 const resultsEl = $('#results');
@@ -38,69 +47,35 @@ let codeToCoinId = {};
 let currentCoinId = 'bitcoin';
 let lastPrices = null;
 let lastRates = null;
+
+// Amount model:
+// - amountLocal: number shown in the input (in current currency)
+// - investedUSD: canonical USD amount used for all calculations
+let amountLocal = 1;
+let investedUSD = 1;
+
+// Also track the selected asset code for rendering labels/descriptions
 let lastAssetCode = 'btc';
-let lastInvestedUSD = 100;
 
 // ---------- Preferences ----------
-function wirePreferenceSavers() {
-    if (assetSelect) {
-        assetSelect.addEventListener('change', () => {
-            localStorage.setItem(LS_ASSET, assetSelect.value);
-            lastAssetCode = assetSelect.value || 'btc';
-        });
-    }
-
-    if (currencyEl) {
-        currencyEl.addEventListener('change', () => {
-            const cur = (currencyEl.value || 'USD').toUpperCase();
-            try { localStorage.setItem(LS_CURRENCY, cur); } catch { }
-            saveCurrency(cur);
-            instantRender(); // re-render cached data
-        });
-    }
-
-    if (amountEl) {
-        const saved = Number(localStorage.getItem(LS_AMOUNT));
-        const initial = Number.isFinite(saved) && saved > 0 ? saved : 100;
-        amountEl.value = String(initial);
-        lastInvestedUSD = initial;
-
-        amountEl.addEventListener('input', () => {
-            const val = Number(amountEl.value);
-            lastInvestedUSD = (Number.isFinite(val) && val > 0) ? val : 0;
-        });
-        amountEl.addEventListener('change', () => {
-            const val = Number(amountEl.value);
-            const clean = (Number.isFinite(val) && val > 0) ? val : 100;
-            amountEl.value = String(clean);
-            lastInvestedUSD = clean;
-            try { localStorage.setItem(LS_AMOUNT, String(clean)); } catch { }
-            instantRender();
-        });
-    }
-
-    periodRadios.forEach(r => {
-        r.addEventListener('change', () => {
-            if (r.checked) localStorage.setItem(LS_PERIOD, r.value);
-        });
-    });
-}
-
 function restorePreferences() {
+    // Asset
     const savedAsset = localStorage.getItem(LS_ASSET);
     if (assetSelect && savedAsset && [...assetSelect.options].some(o => o.value === savedAsset)) {
         assetSelect.value = savedAsset;
         lastAssetCode = savedAsset;
     }
 
+    // Period
     const savedPeriod = localStorage.getItem(LS_PERIOD);
     if (savedPeriod && PERIOD_OPTIONS[savedPeriod]) {
         const radio = [...periodRadios].find(r => r.value === savedPeriod);
         if (radio) radio.checked = true;
     }
 
-    const savedCurrency = localStorage.getItem(LS_CURRENCY);
-    if (currencyEl && savedCurrency && [...currencyEl.options].some(o => o.value === savedCurrency)) {
+    // Currency (default USD)
+    const savedCurrency = (localStorage.getItem(LS_CURRENCY) || 'USD').toUpperCase();
+    if (currencyEl && [...currencyEl.options].some(o => o.value === savedCurrency)) {
         currencyEl.value = savedCurrency;
     }
 }
@@ -117,12 +92,105 @@ function getSelectedCoinId() {
     return codeToCoinId[code] || 'bitcoin';
 }
 
+// ---------- Amount & unit handling ----------
+function updateAmountUnit() {
+    if (!amountUnitEl || !currencyEl) return;
+    const cur = (currencyEl.value || 'USD').toUpperCase();
+    amountUnitEl.textContent = cur;
+}
+
+// Converts canonical USD -> local and paints input. Used on currency change or legacy migration.
+function refreshAmountUiFromUSD() {
+    if (!amountEl || !currencyEl || !lastRates) return;
+    const cur = (currencyEl.value || 'USD').toUpperCase();
+    const local = fromUSD(investedUSD, cur, lastRates);
+    amountLocal = Math.max(1, Math.round(local * 100) / 100); // 2dp
+    amountEl.value = String(amountLocal);
+}
+
+function wirePreferenceSavers() {
+    if (assetSelect) {
+        assetSelect.addEventListener('change', () => {
+            localStorage.setItem(LS_ASSET, assetSelect.value);
+            lastAssetCode = assetSelect.value || 'btc';
+        });
+    }
+
+    if (currencyEl) {
+        currencyEl.addEventListener('change', () => {
+            const cur = (currencyEl.value || 'USD').toUpperCase();
+            saveCurrency(cur);
+            localStorage.setItem(LS_CURRENCY, cur);
+
+            updateAmountUnit();       // update "Amount (XYZ)" label
+            refreshAmountUiFromUSD(); // preserve purchasing power
+            instantRender();          // re-render cards in new currency
+        });
+    }
+
+    if (amountEl) {
+        amountEl.addEventListener('input', () => {
+            const cur = (currencyEl.value || 'USD').toUpperCase();
+            const val = Number(amountEl.value);
+            amountLocal = Number.isFinite(val) && val > 0 ? val : 0;
+            investedUSD = toUSD(amountLocal, cur, lastRates || {});
+        });
+
+        amountEl.addEventListener('change', () => {
+            const cur = (currencyEl.value || 'USD').toUpperCase();
+            const val = Number(amountEl.value);
+            amountLocal = Math.max(1, Math.round((Number.isFinite(val) ? val : 1) * 100) / 100);
+            amountEl.value = String(amountLocal);
+            investedUSD = toUSD(amountLocal, cur, lastRates || {});
+            try { localStorage.setItem(LS_AMOUNT_LOCAL, String(amountLocal)); } catch { }
+            instantRender();
+        });
+    }
+
+    periodRadios.forEach(r => {
+        r.addEventListener('change', () => {
+            if (r.checked) localStorage.setItem(LS_PERIOD, r.value);
+        });
+    });
+}
+
+// Initialize amount from storage & rates with the new model:
+// - Prefer saved local amount (cmr_amount_local) if present.
+// - Else, migrate legacy USD (cmr_amount) and repaint local from USD.
+// - Else, default to 1 in current currency, and derive USD from rates.
+function initAmountFromStorage() {
+    const cur = (currencyEl?.value || 'USD').toUpperCase();
+
+    // 1) Preferred: saved local amount
+    const savedLocal = Number(localStorage.getItem(LS_AMOUNT_LOCAL));
+    if (Number.isFinite(savedLocal) && savedLocal > 0) {
+        amountLocal = savedLocal;
+        investedUSD = toUSD(amountLocal, cur, lastRates || {});
+        amountEl && (amountEl.value = String(amountLocal));
+        return;
+    }
+
+    // 2) Migration path: legacy saved USD
+    const legacyUsd = Number(localStorage.getItem(LS_AMOUNT_LEGACY));
+    if (Number.isFinite(legacyUsd) && legacyUsd > 0) {
+        investedUSD = legacyUsd;
+        // Only in migration we repaint from USD so the user sees its local equivalent
+        refreshAmountUiFromUSD();
+        return;
+    }
+
+    // 3) Default: 1 in current currency (no repaint from USD)
+    amountLocal = 1;
+    amountEl && (amountEl.value = '1');
+    investedUSD = toUSD(amountLocal, cur, lastRates || {});
+}
+
 // ---------- Rendering ----------
 function instantRender() {
     if (!resultsEl || !lastPrices || !lastRates) return;
     const cur = (currencyEl?.value || 'USD').toUpperCase();
     resultsEl.style.display = '';
-    stampEl && (stampEl.style.display = '');
+    if (stampEl) stampEl.style.display = '';
     renderResultsCards({
         prices: lastPrices,
         currency: cur,
@@ -130,27 +198,34 @@ function instantRender() {
         mount: resultsEl,
         stampEl,
         assetCode: lastAssetCode,
-        investedUSD: lastInvestedUSD
+        investedUSD
     });
 }
 
 // ---------- Main "Compare" action ----------
 async function runComparison() {
-    messageEl && (messageEl.textContent = 'Calculating…');
+    if (messageEl) messageEl.textContent = 'Calculating…';
 
     const days = getSelectedDays();
     currentCoinId = getSelectedCoinId();
     lastAssetCode = assetSelect?.value || 'btc';
 
+    // Sync investedUSD with current visible local amount
     if (amountEl) {
+        const cur = (currencyEl.value || 'USD').toUpperCase();
         const val = Number(amountEl.value);
-        lastInvestedUSD = (Number.isFinite(val) && val > 0) ? val : 100;
-        amountEl.value = String(lastInvestedUSD);
-        try { localStorage.setItem(LS_AMOUNT, String(lastInvestedUSD)); } catch { }
+        amountLocal = Number.isFinite(val) && val > 0 ? val : 1;
+        amountEl.value = String(amountLocal);
+        investedUSD = toUSD(amountLocal, cur, lastRates || {});
+        try { localStorage.setItem(LS_AMOUNT_LOCAL, String(amountLocal)); } catch { }
     }
 
     try {
+        // Keep FX in state
         const rates = await getUsdRates();
+        lastRates = rates;
+
+        // Fetch price series in canonical USD
         const data = await fetchCoinGeckoDailyPrices({
             coinId: currentCoinId,
             vsCurrency: 'usd',
@@ -158,11 +233,10 @@ async function runComparison() {
             interval: 'daily'
         });
 
-        lastRates = rates;
         lastPrices = data?.prices || null;
 
-        resultsEl.style.display = '';
-        stampEl.style.display = '';
+        if (resultsEl) resultsEl.style.display = '';
+        if (stampEl) stampEl.style.display = '';
         instantRender();
 
         updateStampFromCaches({
@@ -176,10 +250,10 @@ async function runComparison() {
             days
         });
 
-        messageEl && (messageEl.textContent = '');
+        if (messageEl) messageEl.textContent = '';
     } catch (err) {
         console.error(err);
-        messageEl && (messageEl.textContent = 'Sorry, we could not fetch data. Please try again.');
+        if (messageEl) messageEl.textContent = 'Sorry, we could not fetch data. Please try again.';
     }
 }
 
@@ -196,24 +270,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (resultsEl) resultsEl.style.display = 'none';
     if (stampEl) stampEl.style.display = 'none';
 
-    // 4) Build assets & mapper
+    // 4) Build asset options & mapper
     codeToCoinId = await populateAssetOptions(assetSelect);
 
-    // 5) Restore preferences
+    // 5) Restore currency/period/asset BEFORE ensuring currency options
     restorePreferences();
 
-    // 6) Ensure currency list
+    // 6) Load FX and populate currency options; keep rates in state
     try {
         const rates = await getUsdRates();
+        lastRates = rates;
         await ensureCurrencyOptions(currencyEl, rates);
     } catch (e) {
         console.warn('[cmr] FX load failed:', e?.message || e);
     }
 
-    // 7) Preference savers
+    // 7) Update amount unit now that currency options exist
+    updateAmountUnit();
+
+    // 8) Initialize amount model from storage (no USD repaint unless legacy)
+    initAmountFromStorage();
+
+    // 9) Preference savers (asset, currency, amount, period)
     wirePreferenceSavers();
 
-    // 8) Compute only on user action
+    // 10) Compute only on user action
     const form = $('#compare-form') || document.querySelector('form');
     if (form) {
         form.addEventListener('submit', (e) => {
@@ -222,302 +303,3 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 });
-
-
-
-// // ------------------------------
-// // js/main.js  (CompareMyReturns)
-// // ------------------------------
-
-// // ---------- Imports ----------
-// import { populateAssetOptions } from '../src/ui/populateAssets.js';
-// import { fetchCoinGeckoDailyPrices, PERIOD_OPTIONS } from '../src/services/ExternalServices.js';
-// import { getUsdRates, ensureCurrencyOptions, saveCurrency } from '../src/services/FxService.js';
-// import { renderResultsCards } from '../src/ui/resultsView.js';
-// import { loadPartials } from './partials.js';   // ✅ NEW
-
-// // ---------- LocalStorage keys ----------
-// const LS_ASSET = 'cmr_asset';
-// const LS_PERIOD = 'cmr_period';
-// const LS_CURRENCY = 'cmr_currency';
-// const LS_AMOUNT = 'cmr_amount';
-
-// // ---------- Cache keys ----------
-// const PRICE_CACHE_KEY = 'cmr_price_cache';
-// const PRICE_CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2h
-// const FX_CACHE_KEY = 'cmr_fx_usd_all_v1';
-// const FX_TTL_MS = 6 * 60 * 60 * 1000; // 6h
-
-// // ---------- DOM ----------
-// const $ = (sel) => document.querySelector(sel);
-
-// const assetSelect = $('#asset');
-// const currencyEl = $('#currency');
-// const amountEl = $('#amount');
-// const periodRadios = document.querySelectorAll('input[name="period"]');
-// const stampEl = $('.stamp');
-// const resultsEl = $('#results');
-// const messageEl = $('#message');
-
-// // ---------- State ----------
-// let codeToCoinId = {};
-// let currentCoinId = 'bitcoin';
-// let lastPrices = null;
-// let lastRates = null;
-// let lastAssetCode = 'btc';
-// let lastInvestedUSD = 100;
-
-// // ---------- Header & Branding ----------
-// function wireNav() {
-//     const navButton = $('#nav-button');
-//     const navBar = $('#nav-bar');
-//     if (!navButton || !navBar) return;
-
-//     const toggle = () => {
-//         const isOpen = navBar.classList.toggle('show');   // ✅ match CSS
-//         navButton.classList.toggle('show', isOpen);       // button icon state
-//         navButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-//     };
-
-//     navButton.addEventListener('click', toggle);
-//     navButton.addEventListener('keydown', (e) => {
-//         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
-//     });
-// }
-
-// function initBranding() {
-//     const yearEl = $('#currentyear');
-//     const lastModEl = $('#lastModified');
-//     const siteTitle = $('#site-title');
-//     const siteOwner = $('#site-owner');
-
-//     if (yearEl) yearEl.textContent = String(new Date().getFullYear());
-//     if (lastModEl) lastModEl.textContent = document.lastModified;
-//     if (siteTitle && !siteTitle.textContent.trim()) siteTitle.textContent = 'CompareMyReturns';
-//     if (siteOwner && !siteOwner.textContent.trim())
-//         siteOwner.textContent = siteTitle?.textContent?.trim() || 'CompareMyReturns';
-// }
-
-// // ---------- Utils ----------
-// function timeAgo(ts) {
-//     const diff = Date.now() - ts;
-//     if (diff < 60_000) return 'just now';
-//     const mins = Math.floor(diff / 60_000);
-//     if (mins < 60) return `${mins}m ago`;
-//     const hrs = Math.floor(mins / 60);
-//     if (hrs < 24) return `${hrs}h ago`;
-//     const days = Math.floor(hrs / 24);
-//     return `${days}d ago`;
-// }
-
-// function readPriceCacheEntry(coinId, vsCurrency, days) {
-//     try {
-//         const raw = localStorage.getItem(PRICE_CACHE_KEY);
-//         if (!raw) return null;
-//         const cache = JSON.parse(raw);
-//         const key = `${coinId}|${vsCurrency}|${days}`;
-//         const entry = cache?.[key];
-//         if (!entry?.ts) return null;
-//         const age = Date.now() - entry.ts;
-//         const fresh = age < PRICE_CACHE_TTL_MS;
-//         return { ts: entry.ts, age, fresh };
-//     } catch { return null; }
-// }
-
-// function readFxCacheEntry() {
-//     try {
-//         const raw = localStorage.getItem(FX_CACHE_KEY);
-//         if (!raw) return null;
-//         const obj = JSON.parse(raw);
-//         if (!obj?.ts) return null;
-//         const age = Date.now() - obj.ts;
-//         const fresh = age < FX_TTL_MS;
-//         return { ts: obj.ts, age, fresh };
-//     } catch { return null; }
-// }
-
-// function updateStampFromCaches({ coinId, days }) {
-//     if (!stampEl) return;
-//     const prices = readPriceCacheEntry(coinId, 'usd', days);
-//     const fx = readFxCacheEntry();
-//     const tsList = [prices?.ts, fx?.ts].filter(Boolean);
-//     if (tsList.length === 0) {
-//         stampEl.textContent = 'Returns — Last updated';
-//         return;
-//     }
-//     const latestTs = Math.max(...tsList);
-//     const label =
-//         prices?.fresh && fx?.fresh ? 'cached' :
-//             (prices?.fresh || fx?.fresh) ? 'mixed' : 'fresh';
-//     stampEl.textContent = `Returns — Last updated ${timeAgo(latestTs)} (${label})`;
-// }
-
-// // ---------- Preference handling ----------
-// function wirePreferenceSavers() {
-//     if (assetSelect) {
-//         assetSelect.addEventListener('change', () => {
-//             localStorage.setItem(LS_ASSET, assetSelect.value);
-//             lastAssetCode = assetSelect.value || 'btc';
-//         });
-//     }
-
-//     if (currencyEl) {
-//         currencyEl.addEventListener('change', () => {
-//             const cur = (currencyEl.value || 'USD').toUpperCase();
-//             try { localStorage.setItem(LS_CURRENCY, cur); } catch { }
-//             saveCurrency(cur);
-//             instantRender(); // re-render cached data
-//         });
-//     }
-
-//     if (amountEl) {
-//         const saved = Number(localStorage.getItem(LS_AMOUNT));
-//         const initial = Number.isFinite(saved) && saved > 0 ? saved : 100;
-//         amountEl.value = String(initial);
-//         lastInvestedUSD = initial;
-
-//         amountEl.addEventListener('input', () => {
-//             const val = Number(amountEl.value);
-//             lastInvestedUSD = (Number.isFinite(val) && val > 0) ? val : 0;
-//         });
-//         amountEl.addEventListener('change', () => {
-//             const val = Number(amountEl.value);
-//             const clean = (Number.isFinite(val) && val > 0) ? val : 100;
-//             amountEl.value = String(clean);
-//             lastInvestedUSD = clean;
-//             try { localStorage.setItem(LS_AMOUNT, String(clean)); } catch { }
-//             instantRender();
-//         });
-//     }
-
-//     periodRadios.forEach(r => {
-//         r.addEventListener('change', () => {
-//             if (r.checked) localStorage.setItem(LS_PERIOD, r.value);
-//         });
-//     });
-// }
-
-// function restorePreferences() {
-//     const savedAsset = localStorage.getItem(LS_ASSET);
-//     if (assetSelect && savedAsset && [...assetSelect.options].some(o => o.value === savedAsset)) {
-//         assetSelect.value = savedAsset;
-//         lastAssetCode = savedAsset;
-//     }
-
-//     const savedPeriod = localStorage.getItem(LS_PERIOD);
-//     if (savedPeriod && PERIOD_OPTIONS[savedPeriod]) {
-//         const radio = [...periodRadios].find(r => r.value === savedPeriod);
-//         if (radio) radio.checked = true;
-//     }
-
-//     const savedCurrency = localStorage.getItem(LS_CURRENCY);
-//     if (currencyEl && savedCurrency && [...currencyEl.options].some(o => o.value === savedCurrency)) {
-//         currencyEl.value = savedCurrency;
-//     }
-// }
-
-// function getSelectedPeriodCode() {
-//     const checked = [...periodRadios].find(r => r.checked);
-//     return (checked && checked.value) || '30d';
-// }
-// function getSelectedDays() {
-//     return PERIOD_OPTIONS[getSelectedPeriodCode()] || 30;
-// }
-// function getSelectedCoinId() {
-//     const code = assetSelect?.value || 'BTC';
-//     return codeToCoinId[code] || 'bitcoin';
-// }
-
-// // ---------- Rendering ----------
-// function instantRender() {
-//     if (!resultsEl || !lastPrices || !lastRates) return;
-//     const cur = (currencyEl?.value || 'USD').toUpperCase();
-//     resultsEl.style.display = '';
-//     stampEl && (stampEl.style.display = '');
-//     renderResultsCards({
-//         prices: lastPrices,
-//         currency: cur,
-//         rates: lastRates,
-//         mount: resultsEl,
-//         stampEl,
-//         assetCode: lastAssetCode,
-//         investedUSD: lastInvestedUSD
-//     });
-// }
-
-// // ---------- Main "Compare" action ----------
-// async function runComparison() {
-//     messageEl && (messageEl.textContent = 'Calculating…');
-//     const days = getSelectedDays();
-//     currentCoinId = getSelectedCoinId();
-//     lastAssetCode = assetSelect?.value || 'btc';
-
-//     if (amountEl) {
-//         const val = Number(amountEl.value);
-//         lastInvestedUSD = (Number.isFinite(val) && val > 0) ? val : 100;
-//         amountEl.value = String(lastInvestedUSD);
-//         try { localStorage.setItem(LS_AMOUNT, String(lastInvestedUSD)); } catch { }
-//     }
-
-//     try {
-//         const rates = await getUsdRates();
-//         const data = await fetchCoinGeckoDailyPrices({
-//             coinId: currentCoinId,
-//             vsCurrency: 'usd',
-//             days,
-//             interval: 'daily'
-//         });
-
-//         lastRates = rates;
-//         lastPrices = data?.prices || null;
-
-//         resultsEl.style.display = '';
-//         stampEl.style.display = '';
-//         instantRender();
-//         updateStampFromCaches({ coinId: currentCoinId, days });
-//         messageEl && (messageEl.textContent = '');
-//     } catch (err) {
-//         console.error(err);
-//         messageEl && (messageEl.textContent = 'Sorry, we could not fetch data. Please try again.');
-//     }
-// }
-
-// // ---------- Init ----------
-// document.addEventListener('DOMContentLoaded', async () => {
-//     // 1️⃣ Inject header/footer first
-//     await loadPartials();
-
-//     // 2️⃣ Wire header + footer
-//     wireNav();
-//     initBranding();
-
-//     // 3️⃣ Hide results until user acts
-//     if (resultsEl) resultsEl.style.display = 'none';
-//     if (stampEl) stampEl.style.display = 'none';
-
-//     // 4️⃣ Build assets & mapper
-//     codeToCoinId = await populateAssetOptions(assetSelect);
-
-//     // 5️⃣ Restore preferences
-//     restorePreferences();
-
-//     // 6️⃣ Ensure currency list
-//     try {
-//         const rates = await getUsdRates();
-//         await ensureCurrencyOptions(currencyEl, rates);
-//     } catch (e) {
-//         console.warn('[cmr] FX load failed:', e?.message || e);
-//     }
-
-//     // 7️⃣ Preference savers
-//     wirePreferenceSavers();
-
-//     // 8️⃣ Compare only on user action
-//     const form = $('#compare-form') || document.querySelector('form');
-//     if (form) {
-//         form.addEventListener('submit', (e) => {
-//             e.preventDefault();
-//             runComparison();
-//         });
-//     }
-// });
