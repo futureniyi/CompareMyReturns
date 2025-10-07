@@ -1,9 +1,9 @@
-// Populate the <select id="asset"> dropdown from /data/assets.json
-export async function populateAssetOptions(selectEl) {
+// src/ui/populateAssets.js
+export async function populateAssetOptions(selectEl, savedCode = 'btc') {
     if (!selectEl) return (code) => 'bitcoin';
 
     try {
-        const res = await fetch('/data/assets.json');
+        const res = await fetch('data/assets.json'); // note: no leading slash
         if (!res.ok) throw new Error('assets.json not found');
         const data = await res.json();
 
@@ -15,21 +15,16 @@ export async function populateAssetOptions(selectEl) {
             selectEl.appendChild(opt);
         }
 
-        // Default to Bitcoin
-        selectEl.value = 'btc';
+        // Use savedCode if it exists in the list; otherwise default to btc
+        const codes = new Set(data.assets.map(a => a.code));
+        selectEl.value = codes.has((savedCode || '').toLowerCase()) ? savedCode : 'btc';
 
-        // Build a helper map for code → CoinGecko ID
         const idByCode = Object.fromEntries(data.assets.map(a => [a.code, a.id]));
         return (code = 'btc') => idByCode[code.toLowerCase()] || 'bitcoin';
     } catch (err) {
         console.error('Error loading local assets.json:', err);
-
-        // Simple inline fallback if fetch fails
         return (code) => ({
-            btc: 'bitcoin',
-            eth: 'ethereum',
-            ada: 'cardano',
-            sol: 'solana'
+            btc: 'bitcoin', eth: 'ethereum', ada: 'cardano', sol: 'solana'
         }[code?.toLowerCase()] || 'bitcoin');
     }
 }

@@ -60,13 +60,20 @@
 
                 <!-- Time frame -->
                 <fieldset class="timeframe">
-                    <legend>Select Time frame</legend>
+                    <legend>Select Time Period</legend>
+                
                     <label class="radio">
-                        <input type="radio" name="timeframe" value="1m" checked>
-                        <span>1 Month</span>
+                        <input type="radio" name="period" value="7d" checked>
+                        <span>7 Days</span>
                     </label>
+                
                     <label class="radio">
-                        <input type="radio" name="timeframe" value="1y">
+                        <input type="radio" name="period" value="30d">
+                        <span>30 Days</span>
+                    </label>
+                
+                    <label class="radio">
+                        <input type="radio" name="period" value="1y">
                         <span>1 Year</span>
                     </label>
                 </fieldset>
@@ -74,9 +81,9 @@
                 <!-- Currency -->
                 <label for="currency">Select Currency</label>
                 <select id="currency">
-                    <option value="usd">USD</option>
+                    <!-- <option value="usd">USD</option>
                     <option value="eur">EUR</option>
-                    <option value="ngn">NGN</option>
+                    <option value="ngn">NGN</option> -->
                 </select>
 
                 <!-- CTA -->
