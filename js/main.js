@@ -22,7 +22,7 @@ import { updateStampFromCaches } from '../src/utils/cacheUtils.js';
 const LS_ASSET = 'cmr_asset';
 const LS_PERIOD = 'cmr_period';
 const LS_CURRENCY = 'cmr_currency';
-const LS_AMOUNT_LOCAL = 'cmr_amount_local'; // new: amount typed by user in selected currency
+const LS_AMOUNT_LOCAL = 'cmr_amount_local'; // amount typed by user in selected currency
 const LS_AMOUNT_LEGACY = 'cmr_amount';       // legacy: USD amount (read-only migration)
 
 // ---------- Cache keys / TTLs ----------
@@ -41,6 +41,8 @@ const periodRadios = document.querySelectorAll('input[name="period"]');
 const stampEl = $('.stamp');
 const resultsEl = $('#results');
 const messageEl = $('#message');
+const summaryEl = $('#summary');
+
 
 // ---------- State ----------
 let codeToCoinId = {};
@@ -88,9 +90,12 @@ function getSelectedDays() {
     return PERIOD_OPTIONS[getSelectedPeriodCode()] || 30;
 }
 function getSelectedCoinId() {
-    const code = assetSelect?.value || 'BTC';
-    return codeToCoinId[code] || 'bitcoin';
+    const code = (assetSelect?.value || 'btc').toLowerCase();
+    return (typeof codeToCoinId === 'function')
+        ? codeToCoinId(code)                // ✅ call the mapper function
+        : (codeToCoinId?.[code] || 'bitcoin');
 }
+
 
 // ---------- Amount & unit handling ----------
 function updateAmountUnit() {
@@ -99,7 +104,8 @@ function updateAmountUnit() {
     amountUnitEl.textContent = cur;
 }
 
-// Converts canonical USD -> local and paints input. Used on currency change or legacy migration.
+// Converts canonical USD -> local and paints input.
+// Used ONLY during legacy migration (one-time repaint).
 function refreshAmountUiFromUSD() {
     if (!amountEl || !currencyEl || !lastRates) return;
     const cur = (currencyEl.value || 'USD').toUpperCase();
@@ -122,9 +128,20 @@ function wirePreferenceSavers() {
             saveCurrency(cur);
             localStorage.setItem(LS_CURRENCY, cur);
 
-            updateAmountUnit();       // update "Amount (XYZ)" label
-            refreshAmountUiFromUSD(); // preserve purchasing power
-            instantRender();          // re-render cards in new currency
+            // Update only the unit label. Do NOT repaint the input.
+            updateAmountUnit();
+
+            // Keep user's number as-is; just recompute investedUSD from that number.
+            if (amountEl) {
+                const val = Number(amountEl.value);
+                amountLocal = Math.max(1, Math.round((Number.isFinite(val) ? val : 1) * 100) / 100);
+                amountEl.value = String(amountLocal);
+                investedUSD = toUSD(amountLocal, cur, lastRates || {});
+                try { localStorage.setItem(LS_AMOUNT_LOCAL, String(amountLocal)); } catch { }
+            }
+
+            // Update cards in the new currency
+            instantRender();
         });
     }
 
@@ -156,7 +173,7 @@ function wirePreferenceSavers() {
 
 // Initialize amount from storage & rates with the new model:
 // - Prefer saved local amount (cmr_amount_local) if present.
-// - Else, migrate legacy USD (cmr_amount) and repaint local from USD.
+// - Else, migrate legacy USD (cmr_amount) and repaint local from USD ONCE.
 // - Else, default to 1 in current currency, and derive USD from rates.
 function initAmountFromStorage() {
     const cur = (currencyEl?.value || 'USD').toUpperCase();
@@ -170,12 +187,11 @@ function initAmountFromStorage() {
         return;
     }
 
-    // 2) Migration path: legacy saved USD
+    // 2) Migration path: legacy saved USD (one-time repaint to local)
     const legacyUsd = Number(localStorage.getItem(LS_AMOUNT_LEGACY));
     if (Number.isFinite(legacyUsd) && legacyUsd > 0) {
         investedUSD = legacyUsd;
-        // Only in migration we repaint from USD so the user sees its local equivalent
-        refreshAmountUiFromUSD();
+        refreshAmountUiFromUSD(); // migration only
         return;
     }
 
@@ -197,8 +213,10 @@ function instantRender() {
         rates: lastRates,
         mount: resultsEl,
         stampEl,
+        summaryEl,
         assetCode: lastAssetCode,
-        investedUSD
+        investedUSD,
+        periodDays: getSelectedDays()
     });
 }
 
