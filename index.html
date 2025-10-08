@@ -22,16 +22,35 @@
     <div id="header-slot"></div>
 
     <!-- HERO -->
-    <section class="hero">
+    <!-- <section class="hero">
         <div class="container hero-content">
             <h1 class="hero-title">See how your money could have grown</h1>
             <p class="hero-sub">Compare your returns instantly using real-time prices and currency conversions.</p>
         </div>
+    </section> -->
+
+    <!-- <section class="hero">
+        <div class="container hero-content">
+            <h1 class="hero-title">One-time buy or spread it out?</h1>
+            <p class="hero-sub">Type an amount, choose a period, and we’ll show the winner in your currency.</p>
+        </div>
+    </section> -->
+
+    <section class="hero">
+        <div class="container hero-content">
+            <h1 class="hero-title">One-time buy or spread it out?</h1>
+            <p class="hero-sub">
+                Choose your currency, pick a coin, enter an amount, then select a time period — we’ll show which strategy
+                wins.
+            </p>
+        </div>
     </section>
+
+
 
     <main id="main" class="container">
         <section class="app-card" id="app">
-            <form id="compare-form" class="form-grid" autocomplete="off">
+            <!-- <form id="compare-form" class="form-grid" autocomplete="off">
                 <label for="currency">Select Currency</label>
                 <select id="currency"></select>
 
@@ -53,10 +72,52 @@
                 </fieldset>
 
                 <button type="submit" class="btn-primary">COMPARE MY RETURNS</button>
+            </form> -->
+
+            <form id="compare-form" class="stack">
+                <!-- Currency -->
+                <label for="currency" class="field-label">Choose your currency</label>
+                <select id="currency" name="currency" aria-describedby="currency-hint">
+                    <!-- 🇳🇬 Nigeria (NGN) etc… (your JS fills this) -->
+                </select>
+                <p id="currency-hint" class="hint">We’ll show everything in this currency.</p>
+            
+                <!-- Asset -->
+                <label for="asset" class="field-label">Pick a coin</label>
+                <select id="asset" name="asset" aria-describedby="asset-hint">
+                    <!-- Solana, Bitcoin, Ethereum… -->
+                </select>
+                <p id="asset-hint" class="hint">Example: Solana (SOL), Bitcoin (BTC), Ethereum (ETH).</p>
+            
+                <!-- Amount -->
+                <label for="amount" class="field-label">
+                    Amount (<span id="amount-unit">NGN</span>)
+                </label>
+                <input id="amount" name="amount" type="number" inputmode="decimal" min="1" step="1" placeholder="e.g. 10000000"
+                    aria-describedby="amount-hint" required />
+                <p id="amount-hint" class="hint">Enter a whole number (no commas). We’ll format it for you.</p>
+            
+                <!-- Period -->
+                <fieldset class="field-group" aria-describedby="period-hint">
+                    <legend class="field-label">Select a time period</legend>
+                    <label><input type="radio" name="period" value="7d" checked> 7 days</label>
+                    <label><input type="radio" name="period" value="30d"> 30 days</label>
+                    <label><input type="radio" name="period" value="365d"> 1 year</label>
+                </fieldset>
+                <!-- <p id="period-hint" class="hint">We’ll compare lump sum versus investing the same amount evenly each day.</p> -->
+                <p id="period-hint" class="hint">Lump sum or daily—what wins here?</p>
+
+            
+                <!-- Submit -->
+                <button type="submit" class="btn-primary">Compare Returns</button>
             </form>
 
+
+            <div id="summary" class="summary"></div>
             <div id="results" class="results"></div>
             <p class="stamp"></p>
+            
+
         </section>
     </main>
 

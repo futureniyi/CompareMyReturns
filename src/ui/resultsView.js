@@ -19,7 +19,7 @@ function tsToUtcStamp(tsMs) {
 }
 
 /**
- * Render results cards for Lump Sum vs DCA.
+ * Render results cards for Lump Sum vs DCA and a summary message.
  * Money values are displayed in the currently selected currency via toDisplay(..., currency, rates).
  *
  * @param {Object} args
@@ -27,18 +27,19 @@ function tsToUtcStamp(tsMs) {
  * @param {string} args.currency                 Selected currency code (e.g., 'USD', 'NGN')
  * @param {Record<string, number>} args.rates    USD->CUR FX rates map
  * @param {HTMLElement} args.mount               Container (#results)
- * @param {HTMLElement} [args.stampEl]           Stamp element (.stamp)
- * @param {string} [args.assetCode='btc']        Short code for symbol display
+ * @param {HTMLElement} [args.stampEl]           Stamp element
+ * @param {HTMLElement} [args.summaryEl]         Summary message container (#summary)
+ * @param {string} [args.assetCode='btc']        Asset code for display (e.g., "btc")
  * @param {number} [args.investedUSD=100]        Principal in USD-space
+ * @param {number} [args.periodDays]             Number of days in the window (e.g., 7/30/365)
  */
 export function renderResultsCards({
-  prices, currency, rates, mount, stampEl,
-  assetCode = 'btc', investedUSD = 100
+  prices, currency, rates, mount, stampEl, summaryEl,
+  assetCode = 'btc', investedUSD = 100, periodDays
 }) {
   if (!mount || !Array.isArray(prices) || prices.length === 0) return;
 
   // 1) Compute returns in USD space
-  //    (calculateReturns handles DCA with N-1 contributions for an inclusive series)
   const data = calculateReturns(prices, investedUSD); // { invested, lumpSum, dca }
 
   // 2) Prepare display values in the selected currency
@@ -49,21 +50,21 @@ export function renderResultsCards({
 
   // Lump Sum
   const lumpUnits = Number(data.lumpSum.units || 0).toFixed(8);
-  const lumpStartDisp = toDisplay(data.lumpSum.startPrice, currency, rates); // per-unit start price in selected currency
-  const lumpEndDisp = toDisplay(data.lumpSum.endPrice, currency, rates); // per-unit end price in selected currency
+  const lumpStartDisp = toDisplay(data.lumpSum.startPrice, currency, rates);
+  const lumpEndDisp = toDisplay(data.lumpSum.endPrice, currency, rates);
   const lumpFinalDisp = toDisplay(data.lumpSum.finalValue, currency, rates);
   const lumpGainDisp = toDisplay(data.lumpSum.gain, currency, rates);
   const lumpPctDisp = fmtPct(data.lumpSum.pctReturn);
 
   // DCA
   const dcaUnits = Number(data.dca.units || 0).toFixed(8);
-  const dcaEndDisp = toDisplay(data.dca.endPrice, currency, rates); // per-unit end price in selected currency
+  const dcaEndDisp = toDisplay(data.dca.endPrice, currency, rates);
   const dcaFinalDisp = toDisplay(data.dca.finalValue, currency, rates);
   const dcaGainDisp = toDisplay(data.dca.gain, currency, rates);
   const dcaDailyDisp = toDisplay(data.dca.dailyInvestment, currency, rates);
   const dcaPctDisp = fmtPct(data.dca.pctReturn);
 
-  // 3) Build HTML cards
+  // 3) Build cards
   mount.innerHTML = `
     <article class="result-card">
       <h3>LUMP SUM</h3>
@@ -105,5 +106,42 @@ export function renderResultsCards({
   if (stampEl) {
     const lastTs = prices.at(-1)?.[0] ?? Date.now();
     stampEl.textContent = `Returns — Last updated ${tsToUtcStamp(lastTs)}`;
+  }
+
+  // 5) Winner + crystal-clear summary
+  if (summaryEl) {
+    const days = Number.isFinite(periodDays) ? periodDays : (prices.length - 1);
+
+    const lumpFinalUSD = data.lumpSum.finalValue; // USD-space
+    const dcaFinalUSD = data.dca.finalValue;     // USD-space
+    const diffUSD = dcaFinalUSD - lumpFinalUSD; // + => DCA better, - => Lump Sum better
+    const EPS = 1e-8;
+
+    const winner =
+      Math.abs(diffUSD) <= EPS ? 'Tie' :
+        diffUSD > 0 ? 'DCA' : 'Lump Sum';
+
+    const investedPhrase = investedDisp;
+    const dayPhrase = `${days} day${days === 1 ? '' : 's'}`;
+
+    const lumpFinalStrong = toDisplay(lumpFinalUSD, currency, rates);
+    const dcaFinalStrong = toDisplay(dcaFinalUSD, currency, rates);
+    const diffDisp = toDisplay(Math.abs(diffUSD), currency, rates);
+
+    let comparisonNote;
+    if (Math.abs(diffUSD) <= EPS) {
+      comparisonNote = `about the same as the lump sum result`;
+    } else if (diffUSD > 0) {
+      comparisonNote = `${diffDisp} more than the lump sum result`;
+    } else {
+      comparisonNote = `${diffDisp} less than the lump sum result`;
+    }
+
+    const line1 =
+      `If you invested ${investedPhrase} in ${sym} ${dayPhrase} ago as a lump sum, today you’d have ${lumpFinalStrong}.`;
+    const line2 =
+      `If you split ${investedPhrase} into ${days} equal daily investments, today you’d have ${dcaFinalStrong} — ${comparisonNote}.`;
+
+    summaryEl.innerHTML = `<strong>Winner: ${winner}</strong><br>${line1} ${line2}`;
   }
 }

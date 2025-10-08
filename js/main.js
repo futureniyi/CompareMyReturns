@@ -41,6 +41,8 @@ const periodRadios = document.querySelectorAll('input[name="period"]');
 const stampEl = $('.stamp');
 const resultsEl = $('#results');
 const messageEl = $('#message');
+const summaryEl = $('#summary');
+
 
 // ---------- State ----------
 let codeToCoinId = {};
@@ -211,8 +213,10 @@ function instantRender() {
         rates: lastRates,
         mount: resultsEl,
         stampEl,
+        summaryEl,
         assetCode: lastAssetCode,
-        investedUSD
+        investedUSD,
+        periodDays: getSelectedDays()
     });
 }
 
