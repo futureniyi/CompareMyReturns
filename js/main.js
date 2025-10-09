@@ -4,6 +4,7 @@
 
 // ---------- Imports ----------
 import { populateAssetOptions } from '../src/ui/populateAssets.js';
+import { renderAssetDetails } from '../src/ui/assetDetails.js';
 import { fetchCoinGeckoDailyPrices, PERIOD_OPTIONS } from '../src/services/ExternalServices.js';
 import {
     getUsdRates,
@@ -42,10 +43,11 @@ const stampEl = $('.stamp');
 const resultsEl = $('#results');
 const messageEl = $('#message');
 const summaryEl = $('#summary');
+const assetGridEl = $('#asset-grid');
 
 
 // ---------- State ----------
-let codeToCoinId = {};
+let codeToCoinId = () => 'bitcoin';
 let currentCoinId = 'bitcoin';
 let lastPrices = null;
 let lastRates = null;
@@ -58,6 +60,7 @@ let investedUSD = 1;
 
 // Also track the selected asset code for rendering labels/descriptions
 let lastAssetCode = 'btc';
+let assetMetadata = [];
 
 // ---------- Preferences ----------
 function restorePreferences() {
@@ -284,12 +287,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     wireNav();
     initBranding('CompareMyReturns');
 
-    // 3) Hide results until user acts
+    // 3) Load asset metadata (also populates select if present)
+    try {
+        const assetLoad = await populateAssetOptions(assetSelect);
+        const { assets = [], getId } = assetLoad || {};
+        if (typeof getId === 'function') {
+            codeToCoinId = getId;
+        }
+        assetMetadata = assets;
+        if (assetGridEl) {
+            renderAssetDetails({ mount: assetGridEl, assets: assetMetadata });
+        }
+    } catch (err) {
+        console.warn('[cmr] Asset metadata unavailable:', err);
+        if (assetGridEl) {
+            renderAssetDetails({ mount: assetGridEl, assets: [] });
+        }
+    }
+
+    const hasCompareForm = Boolean(assetSelect && currencyEl && amountEl && periodRadios.length);
+    if (!hasCompareForm) return;
+
+    // 4) Hide results until user acts
     if (resultsEl) resultsEl.style.display = 'none';
     if (stampEl) stampEl.style.display = 'none';
-
-    // 4) Build asset options & mapper
-    codeToCoinId = await populateAssetOptions(assetSelect);
 
     // 5) Restore currency/period/asset BEFORE ensuring currency options
     restorePreferences();
