@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>About • Compare My Returns</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=PT+Serif:wght@400;700&display=swap"
+        rel="stylesheet">
+
+    <link rel="icon" href="favicon.ico">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+
+    <div id="header-slot" role="banner"></div>
+
+    <main id="main" class="container">
+        <section class="info-sections" aria-labelledby="methodology-title">
+            <div class="info-sections__intro">
+                <h2 id="methodology-title" class="info-sections__title">How CompareMyReturns Works</h2>
+                <p class="info-sections__subtitle">
+                    Transparency matters. Here’s the playbook behind every result you see — from the data sources to the
+                    math and the way we summarize outcomes.
+                </p>
+            </div>
+
+            <div class="info-faq" role="list">
+                <details class="info-faq__item" role="listitem" open>
+                    <summary id="info-methodology" class="info-faq__summary">
+                        Methodology
+                    </summary>
+                    <div class="info-faq__content">
+                        <p>
+                            We compare a lump-sum buy versus a steady daily investment over the same period. Historic
+                            price
+                            data comes from CoinGecko’s daily close series, and we normalize every result in your chosen
+                            currency using live FX rates from our currency service.
+                        </p>
+                        <ul>
+                            <li>Daily close prices sourced in USD for consistency.</li>
+                            <li>FX rates refreshed on load so conversions reflect the latest market data.</li>
+                            <li>Asset list curated locally to guarantee fast loads and predictable coverage.</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details class="info-faq__item" role="listitem" open>
+                    <summary id="info-calculations" class="info-faq__summary">
+                        Calculations
+                    </summary>
+                    <div class="info-faq__content">
+                        <p>
+                            For the selected period, we compare two portfolios. The lump-sum portfolio invests the full
+                            amount
+                            on the first day and holds to the end. The DCA portfolio splits the same total into equal
+                            daily
+                            amounts and buys once per day (for stocks, once per trading day). All returns are computed
+                            in USD
+                            and then shown in your selected currency.
+                        </p>
+                        <div class="info-faq__subgroup">
+                            <p class="info-faq__label">Lump sum</p>
+                            <ul>
+                                <li>Units = amount ÷ start_price</li>
+                                <li>Final value = units × end_price</li>
+                            </ul>
+                        </div>
+                        <div class="info-faq__subgroup">
+                            <p class="info-faq__label">DCA</p>
+                            <ul>
+                                <li>Daily amount = amount ÷ days</li>
+                                <li>Daily units = daily_amount ÷ price_on_day_t</li>
+                                <li>Total units = sum of daily units</li>
+                                <li>Final value = total_units × end_price</li>
+                            </ul>
+                        </div>
+                        <p>The performance difference highlights which strategy finished higher and by how much.</p>
+                    </div>
+                </details>
+
+                <details class="info-faq__item" role="listitem" open>
+                    <summary id="info-summary" class="info-faq__summary">
+                        Summary &amp; Interpretation
+                    </summary>
+                    <div class="info-faq__content">
+                        <p>
+                            The results card surfaces the winner, total value, and gain or loss in your currency. We
+                            also
+                            highlight the performance gap and note when prices or FX data were last refreshed so you can
+                            trust what you’re seeing.
+                        </p>
+                        <p>
+                            Treat the comparison as a historical what-if — it does not predict future performance, but
+                            it does
+                            give a clear view of how timing and volatility shaped past outcomes.
+                        </p>
+                    </div>
+                </details>
+            </div>
+        </section>
+    </main>
+
+    <div id="footer-slot" role="contentinfo"></div>
+
+    <!-- Uses your existing loader; no inline JS -->
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>

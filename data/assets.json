@@ -13,7 +13,7 @@
             "maxSupply": 21000000,
             "website": "https://bitcoin.org",
             "explorer": "https://www.blockchain.com/explorer",
-            "logo": "img/assets/btc.png",
+            "logo": "images/assets/btc.png",
             "description": "The original decentralized digital currency focused on secure, scarce, peer-to-peer value transfer."
         },
         {
@@ -28,7 +28,7 @@
             "maxSupply": null,
             "website": "https://ethereum.org",
             "explorer": "https://etherscan.io",
-            "logo": "img/assets/eth.png",
+            "logo": "images/assets/eth.png",
             "description": "Programmable blockchain supporting smart contracts and a large ecosystem of apps."
         },
         {
@@ -43,7 +43,7 @@
             "maxSupply": null,
             "website": "https://solana.com",
             "explorer": "https://solscan.io",
-            "logo": "img/assets/sol.png",
+            "logo": "images/assets/sol.png",
             "description": "High-throughput blockchain aiming for fast, low-cost transactions for mainstream apps."
         },
         {
@@ -58,7 +58,7 @@
             "maxSupply": 45000000000,
             "website": "https://cardano.org",
             "explorer": "https://cardanoscan.io",
-            "logo": "img/assets/ada.png",
+            "logo": "images/assets/ada.png",
             "description": "Research-driven proof-of-stake blockchain focused on security, sustainability, and interoperability."
         },
         {
@@ -73,7 +73,7 @@
             "maxSupply": 200000000,
             "website": "https://bnbchain.org",
             "explorer": "https://bscscan.com",
-            "logo": "img/assets/bnb.png",
+            "logo": "images/assets/bnb.png",
             "description": "Utility token powering the BNB Chain ecosystem with ongoing burns and low-cost smart contract execution."
         },
         {
@@ -88,7 +88,7 @@
             "maxSupply": 100000000000,
             "website": "https://ripple.com/xrp",
             "explorer": "https://xrpscan.com",
-            "logo": "img/assets/xrp.png",
+            "logo": "images/assets/xrp.png",
             "description": "Digital asset designed for fast, low-cost cross-border settlements on the XRP Ledger network."
         },
         {
@@ -103,7 +103,7 @@
             "maxSupply": null,
             "website": "https://dogecoin.com",
             "explorer": "https://dogechain.info",
-            "logo": "img/assets/doge.png",
+            "logo": "images/assets/doge.png",
             "description": "Community-driven meme currency focused on tipping and everyday transactions with low fees."
         },
         {
@@ -118,7 +118,7 @@
             "maxSupply": null,
             "website": "https://tron.network",
             "explorer": "https://tronscan.org",
-            "logo": "img/assets/trx.png",
+            "logo": "images/assets/trx.png",
             "description": "High-throughput blockchain platform targeting scalable decentralized applications and content sharing."
         },
         {
@@ -133,7 +133,7 @@
             "maxSupply": 21000000,
             "website": "https://z.cash",
             "explorer": "https://explorer.z.cash",
-            "logo": "img/assets/zec.png",
+            "logo": "images/assets/zec.png",
             "description": "Privacy-focused cryptocurrency offering shielded transactions via zero-knowledge proofs."
         }
     ]

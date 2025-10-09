@@ -350,7 +350,7 @@ select, #amount {
     font-weight: 600;
     font-size: .8rem;
     text-transform: uppercase;
-    color: #6a6a6a;
+    color: #585858;
 }
 
 .asset-card__details dd {
@@ -366,7 +366,7 @@ select, #amount {
 }
 
 .asset-card__links a {
-    color: #1e5aa8;
+    color: #1d57a3;
     text-decoration: none;
     font-weight: 600;
 }
@@ -374,6 +374,100 @@ select, #amount {
 .asset-card__links a:hover,
 .asset-card__links a:focus {
     text-decoration: underline;
+}
+
+.info-sections {
+    margin: 3rem auto 5rem;
+    display: grid;
+    gap: 2rem;
+}
+
+.info-sections__intro {
+    max-width: 42rem;
+    display: grid;
+    gap: .5rem;
+}
+
+.info-sections__title {
+    margin: 0;
+    font-family: var(--font-head);
+    font-size: clamp(1.5rem, 1.6vw + 1rem, 2.15rem);
+}
+
+.info-sections__subtitle {
+    margin: 0;
+    color: #333;
+    font-size: clamp(1rem, .4vw + .9rem, 1.05rem);
+}
+
+.info-faq {
+    display: grid;
+    gap: 1rem;
+}
+
+.info-faq__item {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1rem 1.25rem;
+}
+
+.info-faq__item:not([open]) .info-faq__content {
+    display: none;
+}
+
+.info-faq__summary {
+    font-family: var(--font-head);
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+}
+
+.info-faq__summary::-webkit-details-marker {
+    display: none;
+}
+
+.info-faq__summary::after {
+    content: '–';
+    float: right;
+    font-size: 1.5rem;
+    line-height: 1;
+    transition: transform .2s ease;
+}
+
+.info-faq__item:not([open]) .info-faq__summary::after {
+    content: '+';
+}
+
+.info-faq__content {
+    margin-top: .75rem;
+    display: grid;
+    gap: .85rem;
+    color: #1b1b1b;
+    font-size: .98rem;
+}
+
+.info-faq__content p {
+    margin: 0;
+    line-height: 1.6;
+}
+
+.info-faq__content ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: .4rem;
+}
+
+.info-faq__label {
+    margin: 0;
+    font-weight: 700;
+}
+
+.info-faq__subgroup {
+    display: grid;
+    gap: .4rem;
 }
 
 .result-card dl {
@@ -433,7 +527,7 @@ select, #amount {
 }
 
 #lastModified {
-    color: #666
+    color: #585858
 }
 
 /* ---------- Responsive ---------- */
@@ -475,12 +569,12 @@ select, #amount {
         background: #000;
     }
 
-    .hero-title {
+    .hero-title, .asset-page__title, .info-sections__title {
         font-family: var(--font-head);
         color: var(--primary);
     }
 
-    .hero-sub {
+    .hero-sub, .asset-page__subtitle, .info-sections__subtitle {
         color: #ddd;
     }
 }
