@@ -1,21 +1,21 @@
 // src/ui/resultsView.js
-import { toDisplay } from '../services/FxService.js';
-import { calculateReturns } from '../calc/returns.js';
+import { toDisplay } from "../services/FxService.js";
+import { calculateReturns } from "../calc/returns.js";
 
 // ---------- helpers ----------
 function fmtPct(n) {
-  const fixed = Number.isFinite(n) ? n.toFixed(2) : '0.00';
+  const fixed = Number.isFinite(n) ? n.toFixed(2) : "0.00";
   return `${fixed}%`;
 }
 
 function tsToUtcStamp(tsMs) {
   const d = new Date(tsMs);
   // Example: "Oct 4, 2025, 13:47 UTC"
-  return d.toLocaleString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-    hour: '2-digit', minute: '2-digit', hour12: false,
-    timeZone: 'UTC'
-  }) + ' UTC';
+  return d.toLocaleString("en-US", {
+    month: "short", day: "numeric", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: false,
+    timeZone: "UTC"
+  }) + " UTC";
 }
 
 /**
@@ -24,18 +24,18 @@ function tsToUtcStamp(tsMs) {
  *
  * @param {Object} args
  * @param {Array<[number, number]>} args.prices  Array of [timestampMs, priceUSD] (inclusive start/end)
- * @param {string} args.currency                 Selected currency code (e.g., 'USD', 'NGN')
+ * @param {string} args.currency                 Selected currency code (e.g., "USD", "NGN")
  * @param {Record<string, number>} args.rates    USD->CUR FX rates map
  * @param {HTMLElement} args.mount               Container (#results)
  * @param {HTMLElement} [args.stampEl]           Stamp element
  * @param {HTMLElement} [args.summaryEl]         Summary message container (#summary)
- * @param {string} [args.assetCode='btc']        Asset code for display (e.g., "btc")
+ * @param {string} [args.assetCode="btc"]        Asset code for display (e.g., "btc")
  * @param {number} [args.investedUSD=100]        Principal in USD-space
  * @param {number} [args.periodDays]             Number of days in the window (e.g., 7/30/365)
  */
 export function renderResultsCards({
   prices, currency, rates, mount, stampEl, summaryEl,
-  assetCode = 'btc', investedUSD = 100, periodDays
+  assetCode = "btc", investedUSD = 100, periodDays
 }) {
   if (!mount || !Array.isArray(prices) || prices.length === 0) return;
 
@@ -43,7 +43,7 @@ export function renderResultsCards({
   const data = calculateReturns(prices, investedUSD); // { invested, lumpSum, dca }
 
   // 2) Prepare display values in the selected currency
-  const sym = (assetCode || 'btc').toUpperCase();
+  const sym = (assetCode || "btc").toUpperCase();
 
   // Contributed
   const investedDisp = toDisplay(data.invested, currency, rates);
@@ -76,7 +76,7 @@ export function renderResultsCards({
         <div><dt>Final Value:</dt><dd><strong>${lumpFinalDisp}</strong></dd></div>
         <div>
           <dt>Gain/Loss:</dt>
-          <dd class="${data.lumpSum.gain >= 0 ? 'gain' : 'loss'}">
+          <dd class="${data.lumpSum.gain >= 0 ? "gain" : "loss"}">
             ${lumpGainDisp} (${lumpPctDisp})
           </dd>
         </div>
@@ -94,7 +94,7 @@ export function renderResultsCards({
         <div><dt>Final Value:</dt><dd><strong>${dcaFinalDisp}</strong></dd></div>
         <div>
           <dt>Gain/Loss:</dt>
-          <dd class="${data.dca.gain >= 0 ? 'gain' : 'loss'}">
+          <dd class="${data.dca.gain >= 0 ? "gain" : "loss"}">
             ${dcaGainDisp} (${dcaPctDisp})
           </dd>
         </div>
@@ -118,11 +118,11 @@ export function renderResultsCards({
     const EPS = 1e-8;
 
     const winner =
-      Math.abs(diffUSD) <= EPS ? 'Tie' :
-        diffUSD > 0 ? 'DCA' : 'Lump Sum';
+      Math.abs(diffUSD) <= EPS ? "Tie" :
+        diffUSD > 0 ? "DCA" : "Lump Sum";
 
     const investedPhrase = investedDisp;
-    const dayPhrase = `${days} day${days === 1 ? '' : 's'}`;
+    const dayPhrase = `${days} day${days === 1 ? "" : "s"}`;
 
     const lumpFinalStrong = toDisplay(lumpFinalUSD, currency, rates);
     const dcaFinalStrong = toDisplay(dcaFinalUSD, currency, rates);

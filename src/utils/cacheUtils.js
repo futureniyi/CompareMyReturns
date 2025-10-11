@@ -2,7 +2,7 @@
 
 function timeAgo(ts) {
     const diff = Date.now() - ts;
-    if (diff < 60_000) return 'just now';
+    if (diff < 60_000) return "just now";
     const mins = Math.floor(diff / 60_000);
     if (mins < 60) return `${mins}m ago`;
     const hrs = Math.floor(mins / 60);
@@ -46,7 +46,7 @@ export function updateStampFromCaches({
     fxCacheKey,
     fxTTL,
     coinId,
-    vsCurrency = 'usd',
+    vsCurrency = "usd",
     days
 }) {
     if (!stampEl) return;
@@ -56,13 +56,13 @@ export function updateStampFromCaches({
 
     const tsList = [prices?.ts, fx?.ts].filter(Boolean);
     if (tsList.length === 0) {
-        stampEl.textContent = 'Returns — Last updated';
+        stampEl.textContent = "Returns — Last updated";
         return;
     }
     const latestTs = Math.max(...tsList);
     const label =
-        prices?.fresh && fx?.fresh ? 'cached' :
-            (prices?.fresh || fx?.fresh) ? 'mixed' : 'fresh';
+        prices?.fresh && fx?.fresh ? "cached" :
+            (prices?.fresh || fx?.fresh) ? "mixed" : "fresh";
 
     stampEl.textContent = `Returns — Last updated ${timeAgo(latestTs)} (${label})`;
 }

@@ -13,7 +13,7 @@
  */
 export function calculateReturns(prices, invested = 100) {
     if (!Array.isArray(prices) || prices.length === 0) {
-        throw new Error('No price data to calculate returns.');
+        throw new Error("No price data to calculate returns.");
     }
 
     // Guard: if we have only one price, treat as a degenerate window.
