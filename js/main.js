@@ -45,6 +45,11 @@ const messageEl = $('#message');
 const summaryEl = $('#summary');
 const assetGridEl = $('#asset-grid');
 
+const amountFormatter = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+});
+
 
 // ---------- State ----------
 let codeToCoinId = () => 'bitcoin';
@@ -61,6 +66,27 @@ let investedUSD = 1;
 // Also track the selected asset code for rendering labels/descriptions
 let lastAssetCode = 'btc';
 let assetMetadata = [];
+
+function parseAmountInput(value) {
+    if (typeof value === 'number') return value;
+    if (typeof value !== 'string') return Number(value) || 0;
+    const stripped = value.replace(/[^0-9.]/g, '');
+    if (!stripped) return 0;
+    const [whole = '', ...decimalParts] = stripped.split('.');
+    const decimal = decimalParts.length ? decimalParts.join('') : '';
+    const normalized = decimal ? `${whole}.${decimal}` : whole;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function paintAmountInput(value) {
+    if (!amountEl) return;
+    if (!Number.isFinite(value) || value <= 0) {
+        amountEl.value = '';
+        return;
+    }
+    amountEl.value = amountFormatter.format(value);
+}
 
 // ---------- Preferences ----------
 function restorePreferences() {
@@ -114,7 +140,7 @@ function refreshAmountUiFromUSD() {
     const cur = (currencyEl.value || 'USD').toUpperCase();
     const local = fromUSD(investedUSD, cur, lastRates);
     amountLocal = Math.max(1, Math.round(local * 100) / 100); // 2dp
-    amountEl.value = String(amountLocal);
+    paintAmountInput(amountLocal);
 }
 
 function wirePreferenceSavers() {
@@ -136,9 +162,9 @@ function wirePreferenceSavers() {
 
             // Keep user's number as-is; just recompute investedUSD from that number.
             if (amountEl) {
-                const val = Number(amountEl.value);
+                const val = parseAmountInput(amountEl.value);
                 amountLocal = Math.max(1, Math.round((Number.isFinite(val) ? val : 1) * 100) / 100);
-                amountEl.value = String(amountLocal);
+                paintAmountInput(amountLocal);
                 investedUSD = toUSD(amountLocal, cur, lastRates || {});
                 try { localStorage.setItem(LS_AMOUNT_LOCAL, String(amountLocal)); } catch { }
             }
@@ -151,16 +177,25 @@ function wirePreferenceSavers() {
     if (amountEl) {
         amountEl.addEventListener('input', () => {
             const cur = (currencyEl.value || 'USD').toUpperCase();
-            const val = Number(amountEl.value);
+            const raw = amountEl.value;
+            const val = parseAmountInput(raw);
             amountLocal = Number.isFinite(val) && val > 0 ? val : 0;
             investedUSD = toUSD(amountLocal, cur, lastRates || {});
+            const formatted = amountLocal > 0 ? amountFormatter.format(amountLocal) : '';
+            if (formatted !== raw) {
+                amountEl.value = formatted;
+                const caretPos = amountEl.value.length;
+                requestAnimationFrame(() => {
+                    amountEl.setSelectionRange(caretPos, caretPos);
+                });
+            }
         });
 
         amountEl.addEventListener('change', () => {
             const cur = (currencyEl.value || 'USD').toUpperCase();
-            const val = Number(amountEl.value);
+            const val = parseAmountInput(amountEl.value);
             amountLocal = Math.max(1, Math.round((Number.isFinite(val) ? val : 1) * 100) / 100);
-            amountEl.value = String(amountLocal);
+            paintAmountInput(amountLocal);
             investedUSD = toUSD(amountLocal, cur, lastRates || {});
             try { localStorage.setItem(LS_AMOUNT_LOCAL, String(amountLocal)); } catch { }
             instantRender();
@@ -186,7 +221,7 @@ function initAmountFromStorage() {
     if (Number.isFinite(savedLocal) && savedLocal > 0) {
         amountLocal = savedLocal;
         investedUSD = toUSD(amountLocal, cur, lastRates || {});
-        amountEl && (amountEl.value = String(amountLocal));
+        paintAmountInput(amountLocal);
         return;
     }
 
@@ -200,7 +235,7 @@ function initAmountFromStorage() {
 
     // 3) Default: 1 in current currency (no repaint from USD)
     amountLocal = 1;
-    amountEl && (amountEl.value = '1');
+    paintAmountInput(amountLocal);
     investedUSD = toUSD(amountLocal, cur, lastRates || {});
 }
 
@@ -234,9 +269,9 @@ async function runComparison() {
     // Sync investedUSD with current visible local amount
     if (amountEl) {
         const cur = (currencyEl.value || 'USD').toUpperCase();
-        const val = Number(amountEl.value);
+        const val = parseAmountInput(amountEl.value);
         amountLocal = Number.isFinite(val) && val > 0 ? val : 1;
-        amountEl.value = String(amountLocal);
+        paintAmountInput(amountLocal);
         investedUSD = toUSD(amountLocal, cur, lastRates || {});
         try { localStorage.setItem(LS_AMOUNT_LOCAL, String(amountLocal)); } catch { }
     }
