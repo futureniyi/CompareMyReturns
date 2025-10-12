@@ -3,9 +3,9 @@
 // ------------------------------
 
 // ---------- Imports ----------
-import { populateAssetOptions } from '../src/ui/populateAssets.js';
-import { renderAssetDetails } from '../src/ui/assetDetails.js';
-import { fetchCoinGeckoDailyPrices, PERIOD_OPTIONS } from '../src/services/ExternalServices.js';
+import { populateAssetOptions } from "../src/ui/populateAssets.js";
+import { renderAssetDetails } from "../src/ui/assetDetails.js";
+import { fetchCoinGeckoDailyPrices, PERIOD_OPTIONS } from "../src/services/ExternalServices.js";
 import {
     getUsdRates,
     ensureCurrencyOptions,
@@ -13,47 +13,47 @@ import {
     toUSD,
     fromUSD,
     toDisplay, // used by resultsView
-} from '../src/services/FxService.js';
-import { renderResultsCards } from '../src/ui/resultsView.js';
-import { loadPartials } from './partials.js';
-import { wireNav, initBranding } from '../src/utils/domUtils.js';
-import { updateStampFromCaches } from '../src/utils/cacheUtils.js';
+} from "../src/services/FxService.js";
+import { renderResultsCards } from "../src/ui/resultsView.js";
+import { loadPartials } from "./partials.js";
+import { wireNav, initBranding, markCurrentNav } from "../src/utils/domUtils.js";
+import { updateStampFromCaches } from "../src/utils/cacheUtils.js";
 
 // ---------- LocalStorage keys ----------
-const LS_ASSET = 'cmr_asset';
-const LS_PERIOD = 'cmr_period';
-const LS_CURRENCY = 'cmr_currency';
-const LS_AMOUNT_LOCAL = 'cmr_amount_local'; // amount typed by user in selected currency
-const LS_AMOUNT_LEGACY = 'cmr_amount';       // legacy: USD amount (read-only migration)
+const LS_ASSET = "cmr_asset";
+const LS_PERIOD = "cmr_period";
+const LS_CURRENCY = "cmr_currency";
+const LS_AMOUNT_LOCAL = "cmr_amount_local"; // amount typed by user in selected currency
+const LS_AMOUNT_LEGACY = "cmr_amount";       // legacy: USD amount (read-only migration)
 
 // ---------- Cache keys / TTLs ----------
-const PRICE_CACHE_KEY = 'cmr_price_cache';
+const PRICE_CACHE_KEY = "cmr_price_cache";
 const PRICE_CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2h
-const FX_CACHE_KEY = 'cmr_fx_usd_all_v1';
+const FX_CACHE_KEY = "cmr_fx_usd_all_v1";
 const FX_TTL_MS = 6 * 60 * 60 * 1000; // 6h
 
 // ---------- DOM ----------
 const $ = (sel) => document.querySelector(sel);
-const assetSelect = $('#asset');
-const currencyEl = $('#currency');
-const amountEl = $('#amount');
-const amountUnitEl = $('#amount-unit');
-const periodRadios = document.querySelectorAll('input[name="period"]');
-const stampEl = $('.stamp');
-const resultsEl = $('#results');
-const messageEl = $('#message');
-const summaryEl = $('#summary');
-const assetGridEl = $('#asset-grid');
+const assetSelect = $("#asset");
+const currencyEl = $("#currency");
+const amountEl = $("#amount");
+const amountUnitEl = $("#amount-unit");
+const periodRadios = document.querySelectorAll("input[name=\"period\"]");
+const stampEl = $(".stamp");
+const resultsEl = $("#results");
+const messageEl = $("#message");
+const summaryEl = $("#summary");
+const assetGridEl = $("#asset-grid");
 
-const amountFormatter = new Intl.NumberFormat('en-US', {
+const amountFormatter = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2
 });
 
 
 // ---------- State ----------
-let codeToCoinId = () => 'bitcoin';
-let currentCoinId = 'bitcoin';
+let codeToCoinId = () => "bitcoin";
+let currentCoinId = "bitcoin";
 let lastPrices = null;
 let lastRates = null;
 
@@ -64,16 +64,16 @@ let amountLocal = 1;
 let investedUSD = 1;
 
 // Also track the selected asset code for rendering labels/descriptions
-let lastAssetCode = 'btc';
+let lastAssetCode = "btc";
 let assetMetadata = [];
 
 function parseAmountInput(value) {
-    if (typeof value === 'number') return value;
-    if (typeof value !== 'string') return Number(value) || 0;
-    const stripped = value.replace(/[^0-9.]/g, '');
+    if (typeof value === "number") return value;
+    if (typeof value !== "string") return Number(value) || 0;
+    const stripped = value.replace(/[^0-9.]/g, "");
     if (!stripped) return 0;
-    const [whole = '', ...decimalParts] = stripped.split('.');
-    const decimal = decimalParts.length ? decimalParts.join('') : '';
+    const [whole = "", ...decimalParts] = stripped.split(".");
+    const decimal = decimalParts.length ? decimalParts.join("") : "";
     const normalized = decimal ? `${whole}.${decimal}` : whole;
     const parsed = Number(normalized);
     return Number.isFinite(parsed) ? parsed : 0;
@@ -82,7 +82,7 @@ function parseAmountInput(value) {
 function paintAmountInput(value) {
     if (!amountEl) return;
     if (!Number.isFinite(value) || value <= 0) {
-        amountEl.value = '';
+        amountEl.value = "";
         return;
     }
     amountEl.value = amountFormatter.format(value);
@@ -105,7 +105,7 @@ function restorePreferences() {
     }
 
     // Currency (default USD)
-    const savedCurrency = (localStorage.getItem(LS_CURRENCY) || 'USD').toUpperCase();
+    const savedCurrency = (localStorage.getItem(LS_CURRENCY) || "USD").toUpperCase();
     if (currencyEl && [...currencyEl.options].some(o => o.value === savedCurrency)) {
         currencyEl.value = savedCurrency;
     }
@@ -113,23 +113,23 @@ function restorePreferences() {
 
 function getSelectedPeriodCode() {
     const checked = [...periodRadios].find(r => r.checked);
-    return (checked && checked.value) || '30d';
+    return (checked && checked.value) || "30d";
 }
 function getSelectedDays() {
     return PERIOD_OPTIONS[getSelectedPeriodCode()] || 30;
 }
 function getSelectedCoinId() {
-    const code = (assetSelect?.value || 'btc').toLowerCase();
-    return (typeof codeToCoinId === 'function')
+    const code = (assetSelect?.value || "btc").toLowerCase();
+    return (typeof codeToCoinId === "function")
         ? codeToCoinId(code)                // ✅ call the mapper function
-        : (codeToCoinId?.[code] || 'bitcoin');
+        : (codeToCoinId?.[code] || "bitcoin");
 }
 
 
 // ---------- Amount & unit handling ----------
 function updateAmountUnit() {
     if (!amountUnitEl || !currencyEl) return;
-    const cur = (currencyEl.value || 'USD').toUpperCase();
+    const cur = (currencyEl.value || "USD").toUpperCase();
     amountUnitEl.textContent = cur;
 }
 
@@ -137,7 +137,7 @@ function updateAmountUnit() {
 // Used ONLY during legacy migration (one-time repaint).
 function refreshAmountUiFromUSD() {
     if (!amountEl || !currencyEl || !lastRates) return;
-    const cur = (currencyEl.value || 'USD').toUpperCase();
+    const cur = (currencyEl.value || "USD").toUpperCase();
     const local = fromUSD(investedUSD, cur, lastRates);
     amountLocal = Math.max(1, Math.round(local * 100) / 100); // 2dp
     paintAmountInput(amountLocal);
@@ -145,15 +145,15 @@ function refreshAmountUiFromUSD() {
 
 function wirePreferenceSavers() {
     if (assetSelect) {
-        assetSelect.addEventListener('change', () => {
+        assetSelect.addEventListener("change", () => {
             localStorage.setItem(LS_ASSET, assetSelect.value);
-            lastAssetCode = assetSelect.value || 'btc';
+            lastAssetCode = assetSelect.value || "btc";
         });
     }
 
     if (currencyEl) {
-        currencyEl.addEventListener('change', () => {
-            const cur = (currencyEl.value || 'USD').toUpperCase();
+        currencyEl.addEventListener("change", () => {
+            const cur = (currencyEl.value || "USD").toUpperCase();
             saveCurrency(cur);
             localStorage.setItem(LS_CURRENCY, cur);
 
@@ -175,13 +175,13 @@ function wirePreferenceSavers() {
     }
 
     if (amountEl) {
-        amountEl.addEventListener('input', () => {
-            const cur = (currencyEl.value || 'USD').toUpperCase();
+        amountEl.addEventListener("input", () => {
+            const cur = (currencyEl.value || "USD").toUpperCase();
             const raw = amountEl.value;
             const val = parseAmountInput(raw);
             amountLocal = Number.isFinite(val) && val > 0 ? val : 0;
             investedUSD = toUSD(amountLocal, cur, lastRates || {});
-            const formatted = amountLocal > 0 ? amountFormatter.format(amountLocal) : '';
+            const formatted = amountLocal > 0 ? amountFormatter.format(amountLocal) : "";
             if (formatted !== raw) {
                 amountEl.value = formatted;
                 const caretPos = amountEl.value.length;
@@ -191,8 +191,8 @@ function wirePreferenceSavers() {
             }
         });
 
-        amountEl.addEventListener('change', () => {
-            const cur = (currencyEl.value || 'USD').toUpperCase();
+        amountEl.addEventListener("change", () => {
+            const cur = (currencyEl.value || "USD").toUpperCase();
             const val = parseAmountInput(amountEl.value);
             amountLocal = Math.max(1, Math.round((Number.isFinite(val) ? val : 1) * 100) / 100);
             paintAmountInput(amountLocal);
@@ -203,7 +203,7 @@ function wirePreferenceSavers() {
     }
 
     periodRadios.forEach(r => {
-        r.addEventListener('change', () => {
+        r.addEventListener("change", () => {
             if (r.checked) localStorage.setItem(LS_PERIOD, r.value);
         });
     });
@@ -214,7 +214,7 @@ function wirePreferenceSavers() {
 // - Else, migrate legacy USD (cmr_amount) and repaint local from USD ONCE.
 // - Else, default to 1 in current currency, and derive USD from rates.
 function initAmountFromStorage() {
-    const cur = (currencyEl?.value || 'USD').toUpperCase();
+    const cur = (currencyEl?.value || "USD").toUpperCase();
 
     // 1) Preferred: saved local amount
     const savedLocal = Number(localStorage.getItem(LS_AMOUNT_LOCAL));
@@ -242,9 +242,9 @@ function initAmountFromStorage() {
 // ---------- Rendering ----------
 function instantRender() {
     if (!resultsEl || !lastPrices || !lastRates) return;
-    const cur = (currencyEl?.value || 'USD').toUpperCase();
-    resultsEl.style.display = '';
-    if (stampEl) stampEl.style.display = '';
+    const cur = (currencyEl?.value || "USD").toUpperCase();
+    resultsEl.style.display = "";
+    if (stampEl) stampEl.style.display = "";
     renderResultsCards({
         prices: lastPrices,
         currency: cur,
@@ -260,15 +260,15 @@ function instantRender() {
 
 // ---------- Main "Compare" action ----------
 async function runComparison() {
-    if (messageEl) messageEl.textContent = 'Calculating…';
+    if (messageEl) messageEl.textContent = "Calculating…";
 
     const days = getSelectedDays();
     currentCoinId = getSelectedCoinId();
-    lastAssetCode = assetSelect?.value || 'btc';
+    lastAssetCode = assetSelect?.value || "btc";
 
     // Sync investedUSD with current visible local amount
     if (amountEl) {
-        const cur = (currencyEl.value || 'USD').toUpperCase();
+        const cur = (currencyEl.value || "USD").toUpperCase();
         const val = parseAmountInput(amountEl.value);
         amountLocal = Number.isFinite(val) && val > 0 ? val : 1;
         paintAmountInput(amountLocal);
@@ -284,15 +284,15 @@ async function runComparison() {
         // Fetch price series in canonical USD
         const data = await fetchCoinGeckoDailyPrices({
             coinId: currentCoinId,
-            vsCurrency: 'usd',
+            vsCurrency: "usd",
             days,
-            interval: 'daily'
+            interval: "daily"
         });
 
         lastPrices = data?.prices || null;
 
-        if (resultsEl) resultsEl.style.display = '';
-        if (stampEl) stampEl.style.display = '';
+        if (resultsEl) resultsEl.style.display = "";
+        if (stampEl) stampEl.style.display = "";
         instantRender();
 
         updateStampFromCaches({
@@ -302,31 +302,32 @@ async function runComparison() {
             fxCacheKey: FX_CACHE_KEY,
             fxTTL: FX_TTL_MS,
             coinId: currentCoinId,
-            vsCurrency: 'usd',
+            vsCurrency: "usd",
             days
         });
 
-        if (messageEl) messageEl.textContent = '';
+        if (messageEl) messageEl.textContent = "";
     } catch (err) {
         console.error(err);
-        if (messageEl) messageEl.textContent = 'Sorry, we could not fetch data. Please try again.';
+        if (messageEl) messageEl.textContent = "Sorry, we could not fetch data. Please try again.";
     }
 }
 
 // ---------- Init ----------
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener("DOMContentLoaded", async () => {
     // 1) Inject header/footer
     await loadPartials();
 
     // 2) Wire header + branding
     wireNav();
-    initBranding('CompareMyReturns');
+    initBranding("CompareMyReturns");
+    markCurrentNav();
 
     // 3) Load asset metadata (also populates select if present)
     try {
         const assetLoad = await populateAssetOptions(assetSelect);
         const { assets = [], getId } = assetLoad || {};
-        if (typeof getId === 'function') {
+        if (typeof getId === "function") {
             codeToCoinId = getId;
         }
         assetMetadata = assets;
@@ -334,7 +335,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderAssetDetails({ mount: assetGridEl, assets: assetMetadata });
         }
     } catch (err) {
-        console.warn('[cmr] Asset metadata unavailable:', err);
+        console.warn("[cmr] Asset metadata unavailable:", err);
         if (assetGridEl) {
             renderAssetDetails({ mount: assetGridEl, assets: [] });
         }
@@ -344,8 +345,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!hasCompareForm) return;
 
     // 4) Hide results until user acts
-    if (resultsEl) resultsEl.style.display = 'none';
-    if (stampEl) stampEl.style.display = 'none';
+    if (resultsEl) resultsEl.style.display = "none";
+    if (stampEl) stampEl.style.display = "none";
 
     // 5) Restore currency/period/asset BEFORE ensuring currency options
     restorePreferences();
@@ -356,7 +357,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         lastRates = rates;
         await ensureCurrencyOptions(currencyEl, rates);
     } catch (e) {
-        console.warn('[cmr] FX load failed:', e?.message || e);
+        console.warn("[cmr] FX load failed:", e?.message || e);
     }
 
     // 7) Update amount unit now that currency options exist
@@ -369,9 +370,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     wirePreferenceSavers();
 
     // 10) Compute only on user action
-    const form = $('#compare-form') || document.querySelector('form');
+    const form = $("#compare-form") || document.querySelector("form");
     if (form) {
-        form.addEventListener('submit', (e) => {
+        form.addEventListener("submit", (e) => {
             e.preventDefault();
             runComparison();
         });

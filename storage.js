@@ -5,4 +5,4 @@ export const getLS = (k, fallback = null) => {
     catch { return fallback; }
 };
 export const setStr = (k, v) => localStorage.setItem(k, v);
-export const getStr = (k, fallback = '') => localStorage.getItem(k) ?? fallback;
+export const getStr = (k, fallback = "") => localStorage.getItem(k) ?? fallback;

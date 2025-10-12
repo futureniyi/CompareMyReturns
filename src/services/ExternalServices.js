@@ -3,13 +3,13 @@
 // ===============================
 
 // ---- Price Cache Constants ----
-const PRICE_CACHE_KEY = 'cmr_price_cache';
+const PRICE_CACHE_KEY = "cmr_price_cache";
 const PRICE_CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 // ---- Cache Utilities ----
 function readPriceCache() {
     try {
-        return JSON.parse(localStorage.getItem(PRICE_CACHE_KEY) || '{}');
+        return JSON.parse(localStorage.getItem(PRICE_CACHE_KEY) || "{}");
     } catch {
         return {};
     }
@@ -19,7 +19,7 @@ function writePriceCache(cache) {
     try {
         localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify(cache));
     } catch (e) {
-        console.warn('[cmr] Failed to write price cache:', e);
+        console.warn("[cmr] Failed to write price cache:", e);
     }
 }
 
@@ -43,10 +43,10 @@ function setCachedPrices(coinId, vsCurrency, days, data) {
 
 // ---- Main API Function (with caching) ----
 export async function fetchCoinGeckoDailyPrices({
-    coinId = 'bitcoin',
-    vsCurrency = 'usd',
+    coinId = "bitcoin",
+    vsCurrency = "usd",
     days = 30,
-    interval = 'daily'
+    interval = "daily"
 } = {}) {
     // 1️⃣ Try reading from cache
     const cached = getCachedPrices(coinId, vsCurrency, days);
@@ -62,7 +62,7 @@ export async function fetchCoinGeckoDailyPrices({
         `&interval=${encodeURIComponent(interval)}`;
 
     console.log(`[cmr] Fetching fresh CoinGecko prices for ${coinId} (${days}d, ${vsCurrency})`);
-    const res = await fetch(url, { headers: { accept: 'application/json' } });
+    const res = await fetch(url, { headers: { accept: "application/json" } });
 
     if (!res.ok) throw new Error(`CoinGecko error: ${res.status}`);
 
@@ -78,13 +78,13 @@ export async function fetchCoinGeckoDailyPrices({
 
 // ---- Period Map ----
 export const PERIOD_OPTIONS = {
-    '7d': 7,
-    '30d': 30,
-    '1y': 365
+    "7d": 7,
+    "30d": 30,
+    "1y": 365
 };
 
 // ---- Optional Helper to Clear Cache ----
 export function clearPriceCache() {
     localStorage.removeItem(PRICE_CACHE_KEY);
-    console.log('[cmr] Price cache cleared');
+    console.log("[cmr] Price cache cleared");
 }
