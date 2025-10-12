@@ -48,8 +48,8 @@ body {
 .skip-link:focus {
     left: 8px;
     top: 8px;
-    background: #000;
-    color: #fff;
+    background: var(--text);
+    color: var(--primary);
     padding: .5rem;
     border-radius: 6px
 }
