@@ -16,7 +16,7 @@ import {
 } from "../src/services/FxService.js";
 import { renderResultsCards } from "../src/ui/resultsView.js";
 import { loadPartials } from "./partials.js";
-import { wireNav, initBranding } from "../src/utils/domUtils.js";
+import { wireNav, initBranding, markCurrentNav } from "../src/utils/domUtils.js";
 import { updateStampFromCaches } from "../src/utils/cacheUtils.js";
 
 // ---------- LocalStorage keys ----------
@@ -321,6 +321,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // 2) Wire header + branding
     wireNav();
     initBranding("CompareMyReturns");
+    markCurrentNav();
 
     // 3) Load asset metadata (also populates select if present)
     try {

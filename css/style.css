@@ -237,6 +237,7 @@ select, #amount {
 }
 
 /* CTA */
+/* CTA */
 .btn-primary {
     margin-top: .5rem;
     width: 100%;
@@ -249,18 +250,14 @@ select, #amount {
     font-weight: 800;
     letter-spacing: .5px;
     cursor: pointer;
-    /* transition: transform .12s ease, filter .12s ease; */
-    transition: background-color 2s ease, color 1.5s ease;
-    
-        &:hover {
-            background-color: var(--text);
-            color: var(--primary);
-        }
+    transition: background-color 2s ease, color 1.5s ease, transform .12s ease, filter .12s ease;
 }
 
 .btn-primary:hover {
+    background-color: var(--text);
+    color: var(--primary);
     transform: translateY(-1px);
-    filter: saturate(110%)
+    filter: saturate(110%);
 }
 
 /* ---------- Results ---------- */
