@@ -12,7 +12,6 @@ import {
     saveCurrency,
     toUSD,
     fromUSD,
-    toDisplay, // used by resultsView
 } from "../src/services/FxService.js";
 import { renderResultsCards } from "../src/ui/resultsView.js";
 import { loadPartials } from "./partials.js";
