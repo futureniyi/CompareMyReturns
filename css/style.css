@@ -48,16 +48,21 @@ body {
 .skip-link:focus {
     left: 8px;
     top: 8px;
-    background: var(--text);
-    color: var(--primary);
+    background: var(--primary);
+    color: var(--text);
     padding: .5rem;
-    border-radius: 6px
+    border-radius: 6px;
+    box-shadow: 0 0 0 3px var(--bg);
+    text-decoration: none;
+    font-weight: 600;
+    z-index: 1000
 }
 
 /* ---------- Header / Nav ---------- */
 .site-header {
     background: #fff;
-    border-bottom: 1px solid #eee
+    border-bottom: 1px solid #eee;
+    padding: 0 1rem;
 }
 
 .header-inner {
@@ -74,6 +79,14 @@ body {
     align-items: center;
     text-decoration: none;
     color: inherit
+}
+
+.brand img {
+    /* display: block; */
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    margin-left: 1rem;
 }
 
 .brand-name {
@@ -538,7 +551,7 @@ select, #amount {
 }
 
 .loss {
-    color: #b00020
+    color: #92001b
 }
 
 .summary {

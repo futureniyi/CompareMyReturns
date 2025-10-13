@@ -51,7 +51,7 @@ export async function fetchCoinGeckoDailyPrices({
     // 1️⃣ Try reading from cache
     const cached = getCachedPrices(coinId, vsCurrency, days);
     if (cached) {
-        console.log(`[cmr] Using cached CoinGecko data for ${coinId} (${days}d, ${vsCurrency})`);
+        console.info(`[cmr] Using cached CoinGecko data for ${coinId} (${days}d, ${vsCurrency})`);
         return cached;
     }
 
@@ -61,7 +61,7 @@ export async function fetchCoinGeckoDailyPrices({
         `&days=${encodeURIComponent(days)}` +
         `&interval=${encodeURIComponent(interval)}`;
 
-    console.log(`[cmr] Fetching fresh CoinGecko prices for ${coinId} (${days}d, ${vsCurrency})`);
+    console.info(`[cmr] Fetching fresh CoinGecko prices for ${coinId} (${days}d, ${vsCurrency})`);
     const res = await fetch(url, { headers: { accept: "application/json" } });
 
     if (!res.ok) throw new Error(`CoinGecko error: ${res.status}`);
@@ -86,5 +86,5 @@ export const PERIOD_OPTIONS = {
 // ---- Optional Helper to Clear Cache ----
 export function clearPriceCache() {
     localStorage.removeItem(PRICE_CACHE_KEY);
-    console.log("[cmr] Price cache cleared");
+    console.info("[cmr] Price cache cleared");
 }
